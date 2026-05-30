@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Helper to determine if current user is admin.
+    // Checks both the dedicated 'admins' collection and the bootstrapped runtime email.
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "govindmalwal62@gmail.com"
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Schema Validation Helpers
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'photoURL', 'createdAt']) &&
+        data.keys().size() == 5 &&
+        data.uid is string && data.uid.size() <= 128 &&
+        data.name is string && data.name.size() <= 100 &&
+        data.email is string && data.email.size() <= 100 &&
+        data.photoURL is string && data.photoURL.size() <= 1000 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidQuiz(data) {
+      return data.keys().hasAll(['quizId', 'title', 'week', 'questions']) &&
+        data.keys().size() == 4 &&
+        data.quizId is string && data.quizId.size() <= 128 &&
+        data.title is string && data.title.size() <= 200 &&
+        data.week is string && data.week.size() <= 50 &&
+        data.questions is list && data.questions.size() <= 100;
+    }
+
+    function isValidResult(data) {
+      return data.keys().hasAll(['uid', 'quizId', 'score', 'physicsScore', 'chemistryScore', 'mathsScore', 'submittedAt']) &&
+        data.keys().size() == 7 &&
+        data.uid is string && data.uid.size() <= 128 &&
+        data.quizId is string && data.quizId.size() <= 128 &&
+        data.score is int && data.score >= 0 && data.score <= 1000 &&
+        data.physicsScore is int && data.physicsScore >= -100 && data.physicsScore <= 1000 &&
+        data.chemistryScore is int && data.chemistryScore >= -100 && data.chemistryScore <= 1000 &&
+        data.mathsScore is int && data.mathsScore >= -100 && data.mathsScore <= 1000 &&
+        data.submittedAt is timestamp;
+    }
+
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+        data.keys().size() == 2 &&
+        data.uid is string && data.uid.size() <= 128 &&
+        data.email is string && data.email.size() <= 100;
+    }
+
+    // --- Users Collection Rules ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().createdAt == request.time;
+      allow update: if isOwner(userId) && isValidUser(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin();
+    }
+
+    // --- Quizzes Collection Rules ---
+    match /quizzes/{quizId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin() && isValidQuiz(incoming());
+      // Admin update has only defined fields or unrestricted
+      allow update: if isAdmin() && isValidQuiz(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // --- Results Collection Rules ---
+    match /results/{resultId} {
+      // Students can only read their own results
+      allow get: if isSignedIn() && (existing().uid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      
+      // Students can build and write their own results
+      allow create: if isSignedIn() && incoming().uid == request.auth.uid && isValidResult(incoming()) && incoming().submittedAt == request.time;
+      allow update: if isSignedIn() && isOwner(existing().uid) && incoming().uid == request.auth.uid && isValidResult(incoming()) && incoming().submittedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // --- Admins Collection Rules ---
+    match /admins/{adminId} {
+      allow get: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
