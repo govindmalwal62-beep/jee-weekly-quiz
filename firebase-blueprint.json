@@ -1,0 +1,128 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Information about registered students",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique user ID matching Firebase Authentication Uid"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the student"
+        },
+        "email": {
+          "type": "string",
+          "description": "Registered email address"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profile picture URL from Google Account"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the student profile was created"
+        }
+      },
+      "required": ["uid", "name", "email", "createdAt"]
+    },
+    "Quiz": {
+      "title": "Weekly Quiz",
+      "description": "Representing a weekly JEE mock test containing questions",
+      "type": "object",
+      "properties": {
+        "quizId": {
+          "type": "string",
+          "description": "Unique identifier of the quiz"
+        },
+        "title": {
+          "type": "string",
+          "description": "Quiz title displayed to students"
+        },
+        "week": {
+          "type": "string",
+          "description": "Label of the week, e.g. Week 1"
+        },
+        "questions": {
+          "type": "array",
+          "description": "Array of multiple-choice Question objects"
+        }
+      },
+      "required": ["quizId", "title", "week", "questions"]
+    },
+    "Result": {
+      "title": "Quiz Submission Result",
+      "description": "Student score card for a completed quiz attempt",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique identifier of the student who took the test"
+        },
+        "quizId": {
+          "type": "string",
+          "description": "The quiz ID associated with this score"
+        },
+        "score": {
+          "type": "integer",
+          "description": "Overall aggregate marks scored in the quiz out of 60"
+        },
+        "physicsScore": {
+          "type": "integer",
+          "description": "Score obtained in the Physics section"
+        },
+        "chemistryScore": {
+          "type": "integer",
+          "description": "Score obtained in the Chemistry section"
+        },
+        "mathsScore": {
+          "type": "integer",
+          "description": "Score obtained in the Maths section"
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the quiz was submitted"
+        }
+      },
+      "required": ["uid", "quizId", "score", "physicsScore", "chemistryScore", "mathsScore", "submittedAt"]
+    },
+    "Admin": {
+      "title": "System Admin",
+      "description": "System admin details mapping UIDs to email configurations",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "UID of the admin user"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the admin"
+        }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles database"
+    },
+    "/quizzes/{quizId}": {
+      "schema": "Quiz",
+      "description": "Tests database featuring individual questions"
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Results records of students"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "System admin clearance register"
+    }
+  }
+}
