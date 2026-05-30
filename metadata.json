@@ -1,6 +1,6 @@
 {
-  "name": "JEE Main Quiz Portal",
-  "description": "A premium, dark-themed futuristic JEE Main CBT examination quiz platform with a live countdown, detailed analysis, and maker panel.",
+  "name": "JEE Weekly Quiz",
+  "description": "Test your JEE preparation every week. Compete with students, track your scores and climb the leaderboard.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
